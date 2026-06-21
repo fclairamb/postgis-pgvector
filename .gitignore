@@ -1,0 +1,4 @@
+# Local scratch / build artefacts
+notes.md
+*.log
+.DS_Store

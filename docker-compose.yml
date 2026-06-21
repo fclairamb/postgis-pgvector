@@ -1,0 +1,21 @@
+# Example usage. `docker compose up` gives you a PostgreSQL 18 server with
+# PostGIS and pgvector both available (and enabled in the default database).
+services:
+  db:
+    image: ghcr.io/fclairamb/postgis-pgvector:18
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      # NOTE: PostgreSQL 18 moved the data directory. The persistent volume
+      # mounts at /var/lib/postgresql (NOT /var/lib/postgresql/data as on <=17).
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
