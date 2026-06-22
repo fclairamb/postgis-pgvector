@@ -111,10 +111,9 @@ our files changed — every rebuild becomes a fresh patch release.
    It needs no secrets, and — unlike a self-hosted run using `GITHUB_TOKEN` —
    its auto-merges *do* trigger the release workflow, so upgrades flow straight
    through to a published image.
-2. After the first release, make the **GHCR package public**: on the package
-   page → *Package settings* → *Change visibility* → Public. (New packages start
-   private even in a public repo.) Optionally link it to this repo from the same
-   page.
+2. **Confirm the GHCR package is public.** It published as public automatically
+   here (anonymous `docker pull` works), but if your account defaults differ,
+   flip it at *package page → Package settings → Change visibility → Public*.
 
 ## What's inside
 
