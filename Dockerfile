@@ -2,7 +2,9 @@
 #
 # postgis-pgvector — PostgreSQL + PostGIS + pgvector in a single image.
 #
-# Base image: the official postgis/postgis image (PostgreSQL + PostGIS).
+# Base image: imresamu/postgis — the multi-arch (amd64 + arm64) build of the
+# official docker-postgis image (PostgreSQL + PostGIS). The canonical
+# postgis/postgis image is amd64-only, which is why we use this one.
 # pgvector is compiled from a pinned source tag on top of it.
 #
 # Versioning is handled by CI, not here: the released image version mirrors the
@@ -15,7 +17,7 @@
 #   * the pinned pgvector version below
 #   * the GitHub Actions used by CI
 
-FROM postgis/postgis:18-3.6
+FROM imresamu/postgis:18-3.6
 
 # pgvector release to build. Kept up to date by Renovate (see renovate.json).
 # renovate: datasource=github-tags depName=pgvector/pgvector

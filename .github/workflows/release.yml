@@ -46,8 +46,8 @@ jobs:
         id: ver
         run: |
           set -euo pipefail
-          # Resolve the base image reference (tag, possibly digest-pinned) from the Dockerfile.
-          base="$(grep -m1 -oE 'postgis/postgis:[^[:space:]]+' Dockerfile)"
+          # Resolve the base image reference (tag, possibly digest-pinned) from the FROM line.
+          base="$(grep -iE '^FROM ' Dockerfile | head -1 | awk '{print $2}')"
           echo "Base image: ${base}"
           docker pull "${base}"
 

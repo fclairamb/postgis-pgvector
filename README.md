@@ -4,7 +4,8 @@ PostgreSQL **18** with both [PostGIS](https://postgis.net/) and
 [pgvector](https://github.com/pgvector/pgvector) in a single image — the two
 extensions the official images never ship together.
 
-It's a thin layer on top of the official [`postgis/postgis`](https://hub.docker.com/r/postgis/postgis)
+It's a thin layer on top of [`imresamu/postgis`](https://hub.docker.com/r/imresamu/postgis)
+— the multi-arch (`amd64` + `arm64`) build of the official `docker-postgis`
 image: pgvector is compiled from a pinned source tag, and that's it. Everything
 else (PostgreSQL, PostGIS, the entrypoint, env vars, volume layout) is exactly
 the upstream image, so all of its documentation applies.
@@ -117,9 +118,11 @@ our files changed — every rebuild becomes a fresh patch release.
 
 ## What's inside
 
-- **PostgreSQL 18** + **PostGIS 3.6** — from `postgis/postgis:18-3.6`
+- **PostgreSQL 18** + **PostGIS 3.6** — from `imresamu/postgis:18-3.6`, the
+  multi-arch build of the official PostGIS image
 - **pgvector** — compiled from source, version pinned in the `Dockerfile`
   (JIT bitcode disabled; no effect on query results)
+- **Architectures** — `linux/amd64` and `linux/arm64`
 
 ## Licensing
 
