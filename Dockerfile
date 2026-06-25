@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
 #
 # postgis-pgvector — PostgreSQL + PostGIS + pgvector in a single image.
 #
@@ -17,7 +17,7 @@
 #   * the pinned pgvector version below
 #   * the GitHub Actions used by CI
 
-FROM imresamu/postgis:18-3.6
+FROM imresamu/postgis:18-3.6@sha256:b5766ee720aca09c61b9a868abefbf273348a4b90ad4cf146b4f8c9ac85d48e4
 
 # pgvector release to build. Kept up to date by Renovate (see renovate.json).
 # renovate: datasource=github-tags depName=pgvector/pgvector
