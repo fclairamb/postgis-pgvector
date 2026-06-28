@@ -1,0 +1,48 @@
+name: ci
+
+# Runs on every pull request so Renovate's auto-merge has a real check to gate
+# on — "auto-merge once CI passes" only means something if CI runs on the PR.
+# Builds the image (amd64, no push) and smoke-tests that PostGIS + pgvector load.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image (amd64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: postgis-pgvector:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test — PostGIS + pgvector load
+        run: |
+          set -euo pipefail
+          docker run -d --name pgci -e POSTGRES_PASSWORD=ci postgis-pgvector:ci
+          # wait for first-init (incl. extension creation) to finish
+          for _ in $(seq 1 60); do
+            docker exec pgci pg_isready -U postgres -q && break
+            sleep 2
+          done
+          docker exec pgci psql -U postgres -v ON_ERROR_STOP=1 -c 'SELECT 1' >/dev/null
+          docker exec pgci psql -U postgres -v ON_ERROR_STOP=1 -c 'SELECT postgis_full_version();'
+          got="$(docker exec pgci psql -U postgres -tAc "SELECT count(*) FROM pg_extension WHERE extname IN ('postgis','vector');")"
+          echo "extensions present: ${got}/2"
+          test "${got}" = "2"
+          docker rm -f pgci

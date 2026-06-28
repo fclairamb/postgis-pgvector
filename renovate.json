@@ -7,33 +7,27 @@
   ],
   "labels": ["dependencies"],
   "pinDigests": true,
+  "platformAutomerge": true,
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Track ENV/ARG versions annotated with a `# renovate:` comment (gosu, pgvector)",
-      "managerFilePatterns": ["/(^|/)Dockerfile$/"],
+      "description": "https://regex101.com/r/Bf1hmQ/1 and https://regex101.com/r/SjTpfT/1",
+      "fileMatch": ["(^|/)Dockerfile$"],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+(?:ENV|ARG) \\S+=(?<currentValue>\\S+)"
+        "#.*https:\\/\\/github\\.com\/(?<depName>[^\\/]+\\/[^\\/]+)\\/(?<sourceType>(releases|tags)+).*\n(?:ENV|ARG)\\s.*_VERSION[\\s|=](?<currentValue>.*)"
       ],
-      "extractVersionTemplate": "^v?(?<version>.+)$"
+      "datasourceTemplate": "github-{{{sourceType}}}"
     }
   ],
   "packageRules": [
     {
-      "description": "Auto-merge GitHub Actions updates",
+      "description": "Auto-merge minor/patch/digest for every dependency (once CI passes)",
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "automerge": true
+    },
+    {
+      "description": "Auto-merge ALL GitHub Actions updates, including major (once CI passes)",
       "matchManagers": ["github-actions"],
-      "automerge": true
-    },
-    {
-      "description": "Auto-merge Debian base image digest + non-major bumps",
-      "matchManagers": ["dockerfile"],
-      "matchUpdateTypes": ["digest", "pin", "patch", "minor"],
-      "automerge": true
-    },
-    {
-      "description": "Auto-merge pgvector + gosu non-major releases",
-      "matchDepNames": ["pgvector/pgvector", "tianon/gosu"],
-      "matchUpdateTypes": ["patch", "minor"],
       "automerge": true
     }
   ]

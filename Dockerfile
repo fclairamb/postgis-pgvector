@@ -47,7 +47,6 @@ RUN set -ex; \
 
 # grab gosu for easy step-down from root
 # https://github.com/tianon/gosu/releases
-# renovate: datasource=github-releases depName=tianon/gosu
 ENV GOSU_VERSION=1.19
 RUN set -eux; \
 	savedAptMark="$(apt-mark showmanual)"; \
@@ -163,7 +162,7 @@ RUN apt-get update \
 # ===========================================================================
 # pgvector — built from a pinned source tag (Renovate tracks it)
 # ===========================================================================
-# renovate: datasource=github-tags depName=pgvector/pgvector
+# https://github.com/pgvector/pgvector/tags
 ARG PGVECTOR_VERSION=0.8.3
 RUN set -eux; \
 	savedAptMark="$(apt-mark showmanual)"; \
