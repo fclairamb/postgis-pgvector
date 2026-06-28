@@ -10,12 +10,12 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Track pgvector source tag pinned in the Dockerfile",
+      "description": "Track ENV/ARG versions annotated with a `# renovate:` comment (gosu, pgvector)",
       "managerFilePatterns": ["/(^|/)Dockerfile$/"],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+ARG PGVECTOR_VERSION=(?<currentValue>\\S+)"
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+(?:ENV|ARG) \\S+=(?<currentValue>\\S+)"
       ],
-      "extractVersionTemplate": "^v(?<version>.+)$"
+      "extractVersionTemplate": "^v?(?<version>.+)$"
     }
   ],
   "packageRules": [
@@ -25,14 +25,14 @@
       "automerge": true
     },
     {
-      "description": "Auto-merge base image digest + PostgreSQL/PostGIS non-major bumps",
+      "description": "Auto-merge Debian base image digest + non-major bumps",
       "matchManagers": ["dockerfile"],
       "matchUpdateTypes": ["digest", "pin", "patch", "minor"],
       "automerge": true
     },
     {
-      "description": "Auto-merge pgvector non-major releases",
-      "matchDepNames": ["pgvector/pgvector"],
+      "description": "Auto-merge pgvector + gosu non-major releases",
+      "matchDepNames": ["pgvector/pgvector", "tianon/gosu"],
       "matchUpdateTypes": ["patch", "minor"],
       "automerge": true
     }

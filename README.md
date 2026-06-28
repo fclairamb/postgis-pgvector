@@ -2,17 +2,14 @@
 
 PostgreSQL **18** with both [PostGIS](https://postgis.net/) and
 [pgvector](https://github.com/pgvector/pgvector) in a single image — the two
-extensions the official images never ship together.
-
-It's a thin layer on top of [`imresamu/postgis`](https://hub.docker.com/r/imresamu/postgis)
-— the multi-arch (`amd64` + `arm64`) build of the official `docker-postgis`
-image: pgvector is compiled from a pinned source tag, and that's it. Everything
-else (PostgreSQL, PostGIS, the entrypoint, env vars, volume layout) is exactly
-the upstream image, so all of its documentation applies.
+extensions the official images never ship together — **built from a pinned
+Debian snapshot** for reproducible, self-contained builds.
 
 ```
 ghcr.io/fclairamb/postgis-pgvector
 ```
+
+Multi-arch: `linux/amd64` + `linux/arm64`.
 
 ## Quick start
 
@@ -23,7 +20,8 @@ docker run -d --name pg \
   ghcr.io/fclairamb/postgis-pgvector:18
 ```
 
-Both extensions are enabled in the default database out of the box:
+PostGIS and pgvector are enabled in the default database (and in
+`template_postgis`) out of the box:
 
 ```sql
 SELECT postgis_full_version();
@@ -46,6 +44,24 @@ and a healthcheck.
 > If you're migrating an existing setup, update your volume mount or Postgres
 > will come up with an empty data directory.
 
+## How it's built
+
+Instead of layering on a prebuilt `postgres`/`postgis` image, the
+[`Dockerfile`](Dockerfile) **reconstructs the stack on a pinned Debian
+snapshot** (`debian:trixie-20260623-slim`):
+
+1. the official [`postgres`](https://github.com/docker-library/postgres) image
+   (18/trixie) — PostgreSQL from the PGDG apt repo, plus gosu, locale, the
+   `postgres` user and the entrypoint — vendored verbatim (trimmed to the
+   amd64/arm64 binary path);
+2. PostGIS, the way [`docker-postgis`](https://github.com/postgis/docker-postgis)
+   (18-3.6) does — `postgresql-18-postgis-3` from PGDG + its init/upgrade scripts;
+3. pgvector, compiled from a pinned source tag.
+
+The upstream entrypoint and init scripts are checked into this repo verbatim
+(`docker-entrypoint.sh`, `docker-ensure-initdb.sh`, `initdb-postgis.sh`,
+`update-postgis.sh`) so behaviour matches the official images exactly.
+
 ## Tags & versioning
 
 The release version mirrors **PostgreSQL's** version, and our own builds only
@@ -53,77 +69,71 @@ ever move the **patch** digit:
 
 ```
 <PG_MAJOR>.<PG_MINOR>.<patch>
-        18  .  0      .  3
-        │       │         └─ our build counter — auto-incremented every release
-        │       └─────────── PostgreSQL minor (e.g. 18.1), owned by upstream
-        └─────────────────── PostgreSQL major, owned by upstream
+        18  .  4      .  0
+        │       │         └─ our build counter — incremented every release
+        │       └─────────── PostgreSQL minor (e.g. 18.4), from PG_VERSION
+        └─────────────────── PostgreSQL major
 ```
 
-PostgreSQL only uses two numbers (`18.0`, `18.1`, …), which leaves the third
-free for us. When PostgreSQL releases a new version the first two digits follow
-it and the patch resets to `0`.
+PostgreSQL only uses two numbers (`18.4`, `18.5`, …), which leaves the third
+free for us. CI reads `PG_VERSION` from the Dockerfile, and the patch resets to
+`0` whenever that MAJOR.MINOR changes.
 
-| Tag         | Meaning                                              | Moves?     |
-|-------------|------------------------------------------------------|------------|
-| `18.0.3`    | One exact, immutable build                           | never      |
-| `18.0`      | Latest patch for PostgreSQL 18.0                      | moving     |
-| `18`        | Latest build for PostgreSQL 18.x                     | moving     |
-| `latest`    | Latest build, period                                 | moving     |
+| Tag         | Meaning                                   | Moves?  |
+|-------------|-------------------------------------------|---------|
+| `18.4.0`    | One exact, immutable build                | never   |
+| `18.4`      | Latest patch for PostgreSQL 18.4          | moving  |
+| `18`        | Latest build for PostgreSQL 18.x          | moving  |
+| `latest`    | Latest build, period                      | moving  |
 
-Pin `18` (or `18.0`) in production for automatic security patches without
-surprise major upgrades; pin `18.0.3` if you need a frozen, reproducible image.
+## Pinning & reproducibility
+
+Every input is pinned in the Dockerfile:
+
+| Input        | Pinned as                          | Updated by |
+|--------------|------------------------------------|------------|
+| Debian base  | `FROM debian:trixie-20260623-slim` | Renovate (digest + newer snapshots) |
+| PostgreSQL   | `ENV PG_VERSION` (PGDG apt version)| **manual** bump |
+| PostGIS      | `ENV POSTGIS_VERSION` (PGDG apt)   | **manual** bump |
+| gosu         | `ENV GOSU_VERSION`                 | Renovate |
+| pgvector     | `ARG PGVECTOR_VERSION` (source tag)| Renovate |
+| GitHub Actions | workflow `uses:`                 | Renovate |
+
+To move PostgreSQL or PostGIS, edit `PG_VERSION` / `POSTGIS_VERSION` to a
+version available in the [PGDG `trixie-pgdg`](https://apt.postgresql.org/pub/repos/apt/dists/trixie-pgdg/)
+repo and commit — CI cuts the matching release. (They're bumped by hand because
+Renovate can't reliably track PGDG apt version strings.)
+
+> Note: pinning the Debian *image* freezes the base layer, but `apt-get install`
+> still resolves against the live Debian/PGDG mirrors at build time. For
+> bit-for-bit reproducibility you'd additionally pin a `snapshot.debian.org`
+> sources list — out of scope here.
 
 ## How it stays up to date
 
-Two automated pieces, both hands-off:
-
-### Renovate
-[`renovate.json`](renovate.json) keeps the inputs current and **auto-merges**:
-
-- the **base image** tag **and digest** — the digest pin is what pulls in new
-  PostgreSQL/PostGIS patch builds (security fixes) automatically;
-- the **pgvector** source tag pinned in the [`Dockerfile`](Dockerfile) (tracked
-  via the `github-tags` datasource — pgvector ships tags, not GitHub Releases);
-- the **GitHub Actions** used by CI.
-
-Non-major updates auto-merge. **Major** bumps (PostgreSQL 18 → 19, PostGIS
-3.x → 4.x, pgvector 0.x → 1.x) open a PR for you to review instead — flip the
-relevant `matchUpdateTypes` in `renovate.json` if you'd rather those auto-merge
-too.
-
-### Release CI
-[`.github/workflows/release.yml`](.github/workflows/release.yml) runs when an
-image input changes on `main` (e.g. a Renovate merge), weekly on a schedule,
-or on demand. Each run:
-
-1. reads the actual PostgreSQL `MAJOR.MINOR` straight from the base image,
-2. computes the next version (`MAJOR.MINOR.<previous patch + 1>`),
-3. builds **multi-arch** (`linux/amd64` + `linux/arm64`) and pushes all four
-   tags above to GHCR, and
-4. cuts a matching GitHub release + git tag.
-
-The weekly run exists so Debian/pgvector security updates land even when none of
-our files changed — every rebuild becomes a fresh patch release.
+[`renovate.json`](renovate.json) auto-merges non-major updates to the Debian
+base image (digest + newer dated snapshots), gosu, pgvector, and the GitHub
+Actions. **Major** bumps (Debian release, pgvector `0.x → 1.x`, …) open a PR for
+you to review. A Renovate merge → push to `main` → the release workflow
+([`.github/workflows/release.yml`](.github/workflows/release.yml)) rebuilds
+multi-arch, pushes all four tags to GHCR, and cuts a GitHub release. You can
+also trigger it manually (`workflow_dispatch`).
 
 ## One-time repo setup
 
-1. **Enable the [Renovate app](https://github.com/apps/renovate)** on this repo.
-   It needs no secrets, and — unlike a self-hosted run using `GITHUB_TOKEN` —
-   its auto-merges *do* trigger the release workflow, so upgrades flow straight
-   through to a published image.
-2. **Confirm the GHCR package is public.** It published as public automatically
-   here (anonymous `docker pull` works), but if your account defaults differ,
-   flip it at *package page → Package settings → Change visibility → Public*.
+**Enable the [Renovate app](https://github.com/apps/renovate)** on this repo
+(no secrets needed; its auto-merges trigger the release workflow). The GHCR
+package is already public — anonymous `docker pull` works.
 
 ## What's inside
 
-- **PostgreSQL 18** + **PostGIS 3.6** — from `imresamu/postgis:18-3.6`, the
-  multi-arch build of the official PostGIS image
-- **pgvector** — compiled from source, version pinned in the `Dockerfile`
-  (JIT bitcode disabled; no effect on query results)
-- **Architectures** — `linux/amd64` and `linux/arm64`
+- **Debian** — `debian:trixie-20260623-slim` (pinned)
+- **PostgreSQL 18** — `PG_VERSION` from PGDG
+- **PostGIS 3.6** — `POSTGIS_VERSION` from PGDG
+- **pgvector** — compiled from source (`PGVECTOR_VERSION`; JIT bitcode disabled,
+  no effect on query results)
 
 ## Licensing
 
-The packaging in this repo is [MIT](LICENSE). The image bundles PostgreSQL,
-PostGIS, and pgvector, each under its own license.
+The packaging in this repo is [MIT](LICENSE). The image bundles Debian,
+PostgreSQL, PostGIS, and pgvector, each under its own license.

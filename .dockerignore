@@ -1,3 +1,7 @@
 *
 !Dockerfile
-!docker-entrypoint-initdb.d/
+!docker-entrypoint.sh
+!docker-ensure-initdb.sh
+!initdb-postgis.sh
+!initdb-pgvector.sh
+!update-postgis.sh

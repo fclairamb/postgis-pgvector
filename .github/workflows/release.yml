@@ -5,12 +5,8 @@ on:
     branches: [main]
     paths:
       - 'Dockerfile'
-      - 'docker-entrypoint-initdb.d/**'
+      - '*.sh'
       - '.github/workflows/release.yml'
-  schedule:
-    # Weekly rebuild to pull in Debian + pgvector security fixes even when our
-    # own files haven't changed. Each rebuild publishes a new patch release.
-    - cron: '17 4 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -46,16 +42,11 @@ jobs:
         id: ver
         run: |
           set -euo pipefail
-          # Resolve the base image reference (tag, possibly digest-pinned) from the FROM line.
-          base="$(grep -iE '^FROM ' Dockerfile | head -1 | awk '{print $2}')"
-          echo "Base image: ${base}"
-          docker pull "${base}"
-
-          # Ask the base image's PostgreSQL binary for its version (MAJOR.MINOR).
-          pg_raw="$(docker run --rm --entrypoint postgres "${base}" --version \
-                    | grep -oE '[0-9]+(\.[0-9]+)?' | head -1)"
+          # PostgreSQL version is pinned in the Dockerfile as `ENV PG_VERSION=<maj.min>-...`.
+          # We mirror its MAJOR.MINOR; the patch is the only digit our CI increments.
+          pg_raw="$(grep -iE '^ENV +PG_VERSION=' Dockerfile | grep -oE '[0-9]+\.[0-9]+' | head -1)"
           pg_major="${pg_raw%%.*}"
-          if [ "${pg_raw}" = "${pg_major}" ]; then pg_minor=0; else pg_minor="${pg_raw#*.}"; fi
+          pg_minor="${pg_raw#*.}"
           mm="${pg_major}.${pg_minor}"
 
           # Our patch number = (highest existing patch for this MAJOR.MINOR) + 1.
