@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1@sha256:87999aa3d42bdc6bea60565083ee17e86d1f3339802f543c0d03998580f9cb89
 #
 # postgis-pgvector — PostgreSQL + PostGIS + pgvector, built from a pinned Debian.
 #
@@ -22,7 +22,7 @@
 # renovate.json and README.md. Versioning (image tag) is computed in CI from
 # PG_VERSION — see .github/workflows/release.yml.
 
-FROM debian:trixie-20260623-slim
+FROM debian:trixie-20260623-slim@sha256:28de0877c2189802884ccd20f15ee41c203573bd87bb6b883f5f46362d24c5c2
 
 # ===========================================================================
 # Below, verbatim from docker-library/postgres 18/trixie (amd64/arm64 path)
