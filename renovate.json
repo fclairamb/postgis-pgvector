@@ -6,7 +6,6 @@
     ":semanticCommits"
   ],
   "labels": ["dependencies"],
-  "pinDigests": true,
   "automerge": true,
   "platformAutomerge": true,
   "customManagers": [
