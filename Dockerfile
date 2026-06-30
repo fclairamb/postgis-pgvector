@@ -163,7 +163,7 @@ RUN apt-get update \
 # pgvector — built from a pinned source tag (Renovate tracks it)
 # ===========================================================================
 # https://github.com/pgvector/pgvector/tags
-ARG PGVECTOR_VERSION=0.8.3
+ARG PGVECTOR_VERSION=0.8.4
 RUN set -eux; \
 	savedAptMark="$(apt-mark showmanual)"; \
 	apt-get update; \
