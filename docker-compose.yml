@@ -2,7 +2,7 @@
 # PostGIS and pgvector both available (and enabled in the default database).
 services:
   db:
-    image: ghcr.io/fclairamb/postgis-pgvector:18@sha256:42c3739acef619fd3567b0657115962d6b0cfafa1c13da9c1e9e542e96a912a9
+    image: ghcr.io/fclairamb/postgis-pgvector:18@sha256:60ca501c4ecbe7d42a2c3dcf0eac41ebb82d7aed347a0e466c484440f3ff8862
     environment:
       POSTGRES_PASSWORD: postgres
     ports:
