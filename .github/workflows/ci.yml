@@ -36,7 +36,12 @@ jobs:
           set -euo pipefail
           docker run -d --name pgci -e POSTGRES_PASSWORD=ci postgis-pgvector:ci
           # wait for first-init (incl. extension creation) to finish
+          # pg_isready also answers on the temporary init server, so wait for the init-complete marker first
           for _ in $(seq 1 60); do
+            docker logs pgci 2>&1 | grep -q 'PostgreSQL init process complete' && break
+            sleep 2
+          done
+          for _ in $(seq 1 30); do
             docker exec pgci pg_isready -U postgres -q && break
             sleep 2
           done
